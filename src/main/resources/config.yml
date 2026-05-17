@@ -1,0 +1,6 @@
+language: zh_cn
+double-click-window-ms: 350
+base-open-ticks: 12
+ticks-per-item-kind: 4
+interaction-range: 5.0
+sound-suppression-radius: 16.0

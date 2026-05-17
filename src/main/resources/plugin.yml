@@ -1,0 +1,6 @@
+name: Quietly
+version: '${project.version}'
+main: cn.kafei.quietly.Quietly
+api-version: '1.21'
+description: Quiet silent container opening for Minecraft 1.21.1+
+authors: [ Kafei ]
