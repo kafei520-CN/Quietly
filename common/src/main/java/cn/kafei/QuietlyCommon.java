@@ -9,6 +9,8 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -43,6 +45,25 @@ public final class QuietlyCommon {
 
 	public static InteractionResult interactionResultSuccess() {
 		return INTERACTION_RESULT_SUCCESS;
+	}
+
+	public static ServerLevel getServerLevel(ServerPlayer player) {
+		if (player == null) {
+			return null;
+		}
+
+		for (String methodName : List.of("serverLevel", "level", "method_37908", "method_7325", "fY")) {
+			try {
+				Method method = player.getClass().getMethod(methodName);
+				Object value = method.invoke(player);
+				if (value instanceof ServerLevel serverLevel) {
+					return serverLevel;
+				}
+			} catch (ReflectiveOperationException | RuntimeException ignored) {
+			}
+		}
+
+		return null;
 	}
 
 	public static BlockState setBooleanProperty(BlockState state, String propertyName, boolean value) {

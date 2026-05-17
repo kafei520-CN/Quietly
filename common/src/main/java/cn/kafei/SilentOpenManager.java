@@ -49,7 +49,8 @@ public final class SilentOpenManager {
 		}
 
 		ActiveSilentOpen existing = ACTIVE_OPENS.get(player.getUUID());
-		if (existing != null && existing.matches(player.serverLevel(), pos)) {
+		ServerLevel level = QuietlyCommon.getServerLevel(player);
+		if (existing != null && level != null && existing.matches(level, pos)) {
 			existing.refresh(player, target.itemKinds());
 			return;
 		}
@@ -83,7 +84,11 @@ public final class SilentOpenManager {
 	}
 
 	private static OpenTarget resolveOpenTarget(ServerPlayer player, BlockPos pos) {
-		ServerLevel level = player.serverLevel();
+		ServerLevel level = QuietlyCommon.getServerLevel(player);
+		if (level == null) {
+			return null;
+		}
+
 		BlockState state = level.getBlockState(pos);
 		if (!QuietlyCommon.isSupportedSilentContainer(level, pos) || !canKeepOpening(player, level, pos)) {
 			return null;
@@ -278,8 +283,13 @@ public final class SilentOpenManager {
 		private int elapsedTicks;
 
 		private ActiveSilentOpen(ServerPlayer player, BlockPos pos, int itemKinds) {
+			ServerLevel level = QuietlyCommon.getServerLevel(player);
+			if (level == null) {
+				throw new IllegalStateException("Unable to resolve ServerLevel for silent open");
+			}
+
 			this.player = player;
-			this.level = player.serverLevel();
+			this.level = level;
 			this.pos = pos.immutable();
 			this.totalTicks = BASE_OPEN_TICKS + itemKinds * TICKS_PER_ITEM_KIND;
 			this.bossBar = new ServerBossEvent(
@@ -303,7 +313,8 @@ public final class SilentOpenManager {
 		}
 
 		private boolean tick() {
-			if (player.serverLevel() != level || !canKeepOpening(player, level, pos)) {
+			ServerLevel currentLevel = QuietlyCommon.getServerLevel(player);
+			if (currentLevel != level || !canKeepOpening(player, level, pos)) {
 				return false;
 			}
 
