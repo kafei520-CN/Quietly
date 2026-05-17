@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "${mod_id}",
+	"version": "${version}",
+	"name": "${mod_name}",
+	"description": "${mod_description}",
+	"authors": [
+		"${mod_author}"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/quietly/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"cn.kafei.fabric.QuietlyFabric"
+		]
+	},
+	"mixins": [
+		"quietly.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=${loader_version}",
+		"minecraft": "${minecraft_versions}",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

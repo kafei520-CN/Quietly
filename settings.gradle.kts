@@ -4,14 +4,14 @@ pluginManagement {
 			name = "Fabric"
 			url = uri("https://maven.fabricmc.net/")
 		}
+		maven {
+			name = "NeoForge"
+			url = uri("https://maven.neoforged.net/releases")
+		}
 		mavenCentral()
 		gradlePluginPortal()
 	}
-
-	plugins {
-		id("net.fabricmc.fabric-loom-remap") version providers.gradleProperty("loom_version")
-	}
 }
 
-// Should match your modid
 rootProject.name = "quietly"
+include("common", "fabric", "neoforge")

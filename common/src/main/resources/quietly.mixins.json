@@ -1,0 +1,25 @@
+{
+	"required": true,
+	"package": "cn.kafei.mixin",
+	"refmap": "quietly.refmap.json",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+		"BarrelBlockEntityMixin",
+		"ChestBlockEntityMixin",
+		"ChestMenuMixin",
+		"ContainerOpenersCounterMixin",
+		"EnderChestBlockEntityMixin",
+		"LevelAccessorMixin",
+		"LevelMixin",
+		"PlayerListMixin",
+		"ServerLevelMixin",
+		"ServerPlayerGameModeMixin",
+		"ShulkerBoxMenuMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}
