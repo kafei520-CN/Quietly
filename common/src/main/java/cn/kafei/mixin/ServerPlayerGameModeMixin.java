@@ -29,8 +29,8 @@ public abstract class ServerPlayerGameModeMixin {
 			return;
 		}
 
-		if (QuietlyCommon.shouldCancelVanillaUse(player.isShiftKeyDown(), hand, level, hitResult.getBlockPos())) {
-			SilentOpenManager.startOrRefresh(player, hitResult.getBlockPos());
+		if (QuietlyCommon.shouldCancelVanillaUse(player.isShiftKeyDown(), hand, stack, level, hitResult.getBlockPos())) {
+			SilentOpenManager.queueOrStart(player, hitResult.getBlockPos());
 			cir.setReturnValue(QuietlyCommon.interactionResultSuccess());
 		}
 	}

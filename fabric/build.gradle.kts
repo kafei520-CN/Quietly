@@ -34,8 +34,8 @@ loom {
 	}
 }
 
-tasks.withType<JavaCompile>().configureEach {
-	source(project(":common").sourceSets.main.get().allSource)
+tasks.named<JavaCompile>("compileJava") {
+	source(project(":common").sourceSets.main.get().allJava)
 }
 
 tasks.withType<Jar>().configureEach {

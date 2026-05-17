@@ -27,6 +27,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -34,11 +35,37 @@ import java.util.UUID;
 public final class SilentOpenManager {
 	private static final int BASE_OPEN_TICKS = 12;
 	private static final int TICKS_PER_ITEM_KIND = 4;
+	private static final long DOUBLE_CLICK_WINDOW_MS = 350L;
 	private static final Map<UUID, ActiveSilentOpen> ACTIVE_OPENS = new HashMap<>();
+	private static final Map<UUID, PendingSilentClick> PENDING_CLICKS = new HashMap<>();
 	private static final Map<AbstractContainerMenu, AnimationTarget> MENU_ANIMATIONS = new HashMap<>();
 	private static final Map<AnimationKey, Integer> ANIMATION_REF_COUNTS = new HashMap<>();
 
 	private SilentOpenManager() {
+	}
+
+	public static void queueOrStart(ServerPlayer player, BlockPos pos) {
+		ServerLevel level = QuietlyCommon.getServerLevel(player);
+		if (level == null) {
+			return;
+		}
+
+		OpenTarget target = resolveOpenTarget(player, pos);
+		if (target == null) {
+			PENDING_CLICKS.remove(player.getUUID());
+			return;
+		}
+
+		UUID playerId = player.getUUID();
+		long now = System.currentTimeMillis();
+		PendingSilentClick pendingClick = PENDING_CLICKS.get(playerId);
+		if (pendingClick != null && pendingClick.matches(level, pos) && !pendingClick.isExpired(now)) {
+			PENDING_CLICKS.remove(playerId);
+			startOrRefresh(player, pos);
+			return;
+		}
+
+		PENDING_CLICKS.put(playerId, new PendingSilentClick(level, pos, now + DOUBLE_CLICK_WINDOW_MS));
 	}
 
 	public static void startOrRefresh(ServerPlayer player, BlockPos pos) {
@@ -66,6 +93,9 @@ public final class SilentOpenManager {
 	}
 
 	public static void tickActiveOpens() {
+		long now = System.currentTimeMillis();
+		PENDING_CLICKS.entrySet().removeIf(entry -> entry.getValue().isExpired(now));
+
 		Iterator<Map.Entry<UUID, ActiveSilentOpen>> iterator = ACTIVE_OPENS.entrySet().iterator();
 		while (iterator.hasNext()) {
 			Map.Entry<UUID, ActiveSilentOpen> entry = iterator.next();
@@ -77,6 +107,7 @@ public final class SilentOpenManager {
 	}
 
 	private static void cancel(UUID playerId) {
+		PENDING_CLICKS.remove(playerId);
 		ActiveSilentOpen removed = ACTIVE_OPENS.remove(playerId);
 		if (removed != null) {
 			removed.close();
@@ -212,6 +243,16 @@ public final class SilentOpenManager {
 	private record OpenTarget(MenuProvider menuProvider, int itemKinds, AnimationTarget animationTarget) {
 	}
 
+	private record PendingSilentClick(ServerLevel level, BlockPos pos, long expiresAtMillis) {
+		private boolean matches(ServerLevel level, BlockPos pos) {
+			return this.level == level && this.pos.equals(pos);
+		}
+
+		private boolean isExpired(long now) {
+			return now > expiresAtMillis;
+		}
+	}
+
 	private record AnimationKey(ServerLevel level, BlockPos pos, AnimationType type) {
 	}
 
@@ -293,7 +334,7 @@ public final class SilentOpenManager {
 			this.pos = pos.immutable();
 			this.totalTicks = BASE_OPEN_TICKS + itemKinds * TICKS_PER_ITEM_KIND;
 			this.bossBar = new ServerBossEvent(
-				createBossBarName(itemKinds),
+				createBossBarName(this.totalTicks),
 				QuietlyCommon.enumValue(BossEvent.BossBarColor.class, "BLUE"),
 				QuietlyCommon.enumValue(BossEvent.BossBarOverlay.class, "PROGRESS")
 			);
@@ -309,7 +350,7 @@ public final class SilentOpenManager {
 			if (!canKeepOpening(player, this.level, this.pos)) {
 				return;
 			}
-			this.bossBar.setName(createBossBarName(itemKinds));
+			this.bossBar.setName(createBossBarName(Math.max(0, totalTicks - elapsedTicks)));
 		}
 
 		private boolean tick() {
@@ -324,6 +365,7 @@ public final class SilentOpenManager {
 			}
 
 			elapsedTicks++;
+			bossBar.setName(createBossBarName(Math.max(0, totalTicks - elapsedTicks)));
 			bossBar.setProgress(Math.min(1.0F, (float) elapsedTicks / (float) totalTicks));
 			if (elapsedTicks < totalTicks) {
 				return true;
@@ -337,8 +379,17 @@ public final class SilentOpenManager {
 			bossBar.removePlayer(player);
 		}
 
-		private static Component createBossBarName(int itemKinds) {
-			return Component.translatable("quietly.silent_open.progress", itemKinds);
+		private static Component createBossBarName(int remainingTicks) {
+			return QuietlyLocalization.component(
+				QuietlyConfig.language(),
+				"quietly.silent_open.progress",
+				formatSeconds(remainingTicks),
+				Component.keybind("key.sneak")
+			);
+		}
+
+		private static String formatSeconds(int ticks) {
+			return String.format(Locale.ROOT, "%.1f", ticks / 20.0D);
 		}
 	}
 }

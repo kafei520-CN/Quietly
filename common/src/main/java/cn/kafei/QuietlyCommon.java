@@ -3,6 +3,7 @@ package cn.kafei;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.Holder;
@@ -14,6 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.EnderChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -30,8 +32,11 @@ public final class QuietlyCommon {
 	private QuietlyCommon() {
 	}
 
-	public static void initialize() {
+	public static void initialize(Path configDirectory) {
+		QuietlyLocalization.initialize();
+		QuietlyConfig.initialize(configDirectory);
 		LOGGER.info("Quietly common initialized for Minecraft 1.21.1~1.21.10");
+		LOGGER.info("Quietly server language: {}", QuietlyConfig.language());
 	}
 
 	public static boolean isSupportedSilentContainer(Level level, BlockPos pos) {
@@ -39,8 +44,12 @@ public final class QuietlyCommon {
 		return state.getMenuProvider(level, pos) != null || state.getBlock() instanceof EnderChestBlock;
 	}
 
-	public static boolean shouldCancelVanillaUse(boolean sneaking, InteractionHand hand, Level level, BlockPos pos) {
-		return sneaking && hand == InteractionHand.MAIN_HAND && isSupportedSilentContainer(level, pos);
+	public static boolean shouldCancelVanillaUse(boolean sneaking, InteractionHand hand, ItemStack heldStack, Level level, BlockPos pos) {
+		return sneaking
+			&& hand == InteractionHand.MAIN_HAND
+			&& heldStack != null
+			&& heldStack.isEmpty()
+			&& isSupportedSilentContainer(level, pos);
 	}
 
 	public static InteractionResult interactionResultSuccess() {
